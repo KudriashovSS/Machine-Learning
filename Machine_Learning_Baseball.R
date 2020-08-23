@@ -66,6 +66,64 @@ boost<-function(train_sample, control_sample, string)
   #return ()
 }
 
+find_best_strategy<-function(sample)
+  
+{  
+  
+  
+  for (i in 1:length(unique(sample$Date)))
+    
+  {
+    
+    
+    max<-0
+    kmaxup<-0
+    
+    for (j in 1:25)
+      
+    {
+      
+      
+      if (nrow(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Pred>=0.50+j/100))>0)
+      {
+        
+        if(profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Pred>=0.50+j/100))[length(profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Pred>=0.50+j/100)))]>max)    
+          
+        {
+          
+          max<-profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Pred>=0.50+j/100))[length(profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Pred>=0.50+j/100)))]
+          kmaxup<-j
+        }
+        
+        
+      } 
+      
+      
+    }
+    
+    if (exists("sample_overall")==TRUE)
+      
+    {
+      
+      sample_overall<-rbind(sample_overall, subset(sample, sample$Date==unique(sample$Date)[i] & sample$Pred>=0.50+kmaxup/100))
+      
+      
+    }
+    
+    
+    if (exists("sample_overall")==FALSE)
+    {
+      
+      sample_overall<-subset(sample, sample$Date==unique(sample$Date)[i] & sample$Date==unique(sample$Date)[i] & sample$Pred>=0.50+kmaxup/100)
+      
+    }
+    
+  }
+  
+  return(sample_overall)
+  
+}
+
 
 #directory<-"C:/Users/mb29945/Desktop/SK/Machine_Learning/Machine_Learning/SPORTS/Baseball/"
 directory<-"C:/Users/Сергей/Desktop/НЕ ЗАХЛАМЛЯЙ РАБОЧИЙ СТОЛ, СКЛАДЫВАТЬ ВСЕ СЮДА/Сергей/Machine_Learning/Machine_Learning/Machine_Learning/SPORTS/Baseball/"
