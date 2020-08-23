@@ -1,3 +1,5 @@
+
+
 library(downloader)
 library(pROC)
 library(ROCR)
@@ -8,41 +10,10 @@ library(dplyr)
 library(Ckmeans.1d.dp)
 library(readxl)
 library(bitops)
-#library(RCurl)
+library(RCurl)
 library(xlsx)
 library(ggplot2)
 library(factoextra)
-
-weighted_mean<-function(x)
-{
-  a<-c(rep(0,length(x)))
-  
-  for(i in 1:length(x))
-  {
-    a[i]<-i/length(x)
-  }
-  
-  return (sum(a*x)/length(x))
-}
-
-boost<-function(train_sample, control_sample, string)
-  
-{
-  
-  set.seed(189)
-  
-  bst <- xgboost(data = data.matrix(train_sample[,!names(train_sample) %in% "Flag"]), label = train_sample$Flag, eta = 0.01,
-                 max_depth =20, gamma = 10, subsample = 0.6, colsample_bytree =0.5, min_child_weight = 5,
-                 nthread = 2,  nrounds = 1000, eval_metric = "auc",objective='binary:logistic') 
-  
-  
-  xgb.save(bst, paste(directory, 'xgb.model_', string, sep=""))
-  
-  #return (predict(xgb, data.matrix(control_sample)))
-  #return(xgb)
-  
-  return ()
-}
 
 
 profit<-function(data_sample)
@@ -64,292 +35,283 @@ profit<-function(data_sample)
   
 }
 
-pizdez<-function(sample, multiplier, ts)
+weighted_mean<-function(x)
+{
+  a<-c(rep(0,length(x)))
   
-{  
-  
-  
-  for (i in 1:length(unique(sample$Date)))
-    
+  for(i in 1:length(x))
   {
-    
-    
-    max<-0
-    kmaxup<-0
-    
-    for (j in 1:25)
-      
-    {
-      
-      
-      if (nrow(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+j/100))>0)
-      {
-        
-        if(profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+j/100))[length(profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+j/100)))]>max)    
-          
-        {
-          
-          max<-profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+j/100))[length(profit(subset(sample, sample$Date<unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+j/100)))]
-          kmaxup<-j
-        }
-        
-        
-      } 
-      
-      
-    }
-    
-    if (exists("sample_overall")==TRUE)
-      
-    {
-      
-      sample_overall<-rbind(sample_overall, subset(sample, sample$Date==unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+kmaxup/100))
-      
-      
-    }
-    
-    
-    if (exists("sample_overall")==FALSE)
-    {
-      
-      sample_overall<-subset(sample, sample$Date==unique(sample$Date)[i] & sample$Date==unique(sample$Date)[i] & sample$Koef>=1.2*multiplier & sample$Koef<=2.0*multiplier & sample$Pred>=ts+kmaxup/100)
-      
-    }
-    
+    a[i]<-i/length(x)
   }
   
-  return(sample_overall)
+  return (sum(a*x)/length(x))
+}
+
+boost<-function(train_sample, control_sample, string)
+  
+{
+  
+  set.seed(189)
+  
+  xgb <- xgboost(data = data.matrix(train_sample[,!names(train_sample) %in% "Flag"]), label = train_sample$Flag, eta = 0.01,
+                 max_depth =20, gamma = 10, subsample = 0.6, colsample_bytree =0.5, min_child_weight = 5,
+                 nthread = 2,  nrounds = 1000, eval_metric = "auc",objective='binary:logistic') 
+  
+  
+  #xgb.save(bst, paste(directory, 'xgb.model_', string, sep=""))
+  
+  return (predict(xgb, data.matrix(control_sample)))
+  #return(xgb)
+  
+  #return ()
+}
+
+
+#directory<-"C:/Users/mb29945/Desktop/SK/Machine_Learning/Machine_Learning/SPORTS/Baseball/"
+directory<-"C:/Users/Сергей/Desktop/НЕ ЗАХЛАМЛЯЙ РАБОЧИЙ СТОЛ, СКЛАДЫВАТЬ ВСЕ СЮДА/Сергей/Machine_Learning/Machine_Learning/Machine_Learning/SPORTS/Baseball/"
+data_teams<-read_excel(paste(directory, "Baseball_history_data_team_stats.xlsx", sep=""), 
+                       col_names = c("Season", "Dataset", "Game-id", "Date", "Team", "Venue", "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10", 
+                                     "I11", "I12", "I13", "I14", "I15", "I16", "I17", "I18", "I19", "I20", "I21", "I22", "I23", "I24", "I25", "R", "H", "E",
+                                     "Umpires_H_1_B", "Umpires_2_3_B", "Temperature", "Wind", "Duration", "AB", "R_B", "H_B", "RBI", "BB_B", "1B", "2B", "3B", "HR",
+                                     "TB", "SB", "HBP", "SO", "PA", "P_B", "S_B", "PO", "A_B", "AVG_B", "Starting_pitcher", "W_L_pitcher", "W", "L", "IP", "H_P",
+                                     "R_P", "ER_P", "ERA_P", "P_P", "S_P", "BB_P", "SO_P", "SB_P", "HR_P", "QS_P", "HB_P", "CG_P", "CGSHO_P", "NH_P", "BF_P", "GB_P",
+                                     "FB_P", "LD_P", "Opening Odds", "Live_movements_opened", "Live_movements_1", "Live_movements_2", "Live_movements_3", 
+                                     "Live_movements_closed", "Closing_odds", "Runline", "1H_Total_1H_ML", "1H_runline"),
+                       skip=1)
+
+  
+data_teams$I1<-ifelse(is.na(data_teams$I1)==TRUE,0,data_teams$I1)
+data_teams$I2<-ifelse(is.na(data_teams$I2)==TRUE,0,data_teams$I2)
+data_teams$I3<-ifelse(is.na(data_teams$I3)==TRUE,0,data_teams$I3)
+data_teams$I4<-ifelse(is.na(data_teams$I4)==TRUE,0,data_teams$I4)
+data_teams$I5<-ifelse(is.na(data_teams$I5)==TRUE,0,data_teams$I5)
+data_teams$I6<-ifelse(is.na(data_teams$I6)==TRUE,0,data_teams$I6)
+data_teams$I7<-ifelse(is.na(data_teams$I7)==TRUE,0,data_teams$I7)
+data_teams$I8<-ifelse(is.na(data_teams$I8)==TRUE,0,data_teams$I8)
+data_teams$I9<-ifelse(is.na(data_teams$I9)==TRUE,0,data_teams$I9)
+data_teams$I10<-ifelse(is.na(data_teams$I10)==TRUE,0,data_teams$I10)
+data_teams$I11<-ifelse(is.na(data_teams$I11)==TRUE,0,data_teams$I11)
+data_teams$I12<-ifelse(is.na(data_teams$I12)==TRUE,0,data_teams$I12)
+data_teams$I13<-ifelse(is.na(data_teams$I13)==TRUE,0,data_teams$I13)
+data_teams$I14<-ifelse(is.na(data_teams$I14)==TRUE,0,data_teams$I14)
+data_teams$I15<-ifelse(is.na(data_teams$I15)==TRUE,0,data_teams$I15)
+data_teams$I16<-ifelse(is.na(data_teams$I16)==TRUE,0,data_teams$I16)
+data_teams$I17<-ifelse(is.na(data_teams$I17)==TRUE,0,data_teams$I17)
+data_teams$I18<-ifelse(is.na(data_teams$I18)==TRUE,0,data_teams$I18)
+data_teams$I19<-ifelse(is.na(data_teams$I19)==TRUE,0,data_teams$I19)
+data_teams$I20<-ifelse(is.na(data_teams$I20)==TRUE,0,data_teams$I20)
+data_teams$I21<-ifelse(is.na(data_teams$I21)==TRUE,0,data_teams$I21)
+data_teams$I22<-ifelse(is.na(data_teams$I22)==TRUE,0,data_teams$I22)
+data_teams$I23<-ifelse(is.na(data_teams$I23)==TRUE,0,data_teams$I23)
+data_teams$I24<-ifelse(is.na(data_teams$I24)==TRUE,0,data_teams$I24)
+data_teams$I25<-ifelse(is.na(data_teams$I25)==TRUE,0,data_teams$I25)
+
+data<-data.frame(matrix(data=NA, nrow=nrow(data_teams)/2, ncol=94))
+
+colnames(data)<-c("Season", "REG_PO", "Date", "Game", "Team_1", "Team_2", "Goal_1", "Goal_2", "Win_NBA", "Defeat_NBA", "Wind", "Duration", "R_1", "R_2",
+                  "H_1", "H_2", "E_1", "E_2", "AB_1", "AB_2", "R_B_1", "R_B_2", "H_B_1", "H_B_2", "RBI_1", "RBI_2", "BB_B_1", "BB_B_2", "B_1_1", "B_1_2",
+                  "B_2_1", "B_2_2", "B_3_1", "B_3_2", "HR_1", "HR_2", "TB_1", "TB_2", "SB_1", "SB_2", "HBP_1", "HBP_2", "SO_1", "SO_2", 
+                  "PA_1", "PA_2", "PB_1", "PB_2","PO_1", "PO_2", "A_B_1", "A_B_2", "Flag_Win", "Flag_Defeat", "IP_1", "IP_2", "H_P_1", "H_P_2", "R_P_1",
+                  "R_P_1", "ER_P_1", "ER_P_2", "ERA_P_1", "ERA_P_2", "P_P_1", "P_P_2", "S_P_1", "S_P_2", "BB_P_1", "BB_P_2", "SO_P_1",
+                  "SO_P_2", "SB_P_1", "SB_P_2", "HR_P_1", "HR_P_2", "QS_P_1", "QS_P_2", "HB_P_1", "HB_P_2", "CG_P_1", "CG_P_2", "CGSHO_P_1", 
+                  "CGSHO_P_2", "NH_P_1", "NH_P_2", "BF_P_1", "BF_P_1", "GB_P_1", "GB_P_2", "FB_P_1", "FB_P_2","LD_P_1", "LD_P_2")
+
+data$Date<-as.Date("2019-01-01")
+
+for (i in 1:nrow(data))
+  
+{
+  data$Season[i]    <-              data_teams$Season[2*i]
+  data$REG_PO[i]    <-              ifelse(grepl("Regular", data_teams$Dataset[2*i])==TRUE, "Regular", "Playoff")
+  
+  data$Date[i]      <-              as.Date(data_teams$Date)[2*i]
+  data$Game[i]      <-              data_teams$`Game-id`[2*i]
+  
+  data$Team_1[i]    <-              data_teams$Team[2*i]
+  data$Team_2[i]    <-              data_teams$Team[2*i-1]
+  
+  data$Goal_1[i]    <-              data_teams$I1[2*i]+data_teams$I2[2*i]+data_teams$I3[2*i]+data_teams$I4[2*i]+data_teams$I5[2*i]+data_teams$I6[2*i]+
+                                    data_teams$I7[2*i]+data_teams$I8[2*i]+data_teams$I9[2*i]+data_teams$I10[2*i]+data_teams$I11[2*i]+data_teams$I12[2*i]+
+                                    data_teams$I13[2*i]+data_teams$I14[2*i]+data_teams$I15[2*i]+data_teams$I16[2*i]+data_teams$I17[2*i]+data_teams$I18[2*i]+
+                                    data_teams$I19[2*i]+data_teams$I20[2*i]+data_teams$I21[2*i]+data_teams$I22[2*i]+data_teams$I23[2*i]+data_teams$I24[2*i]+
+                                    data_teams$I24[2*i]+data_teams$I25[2*i]
+  
+  data$Goal_2[i]    <-              data_teams$I1[2*i-1]+data_teams$I2[2*i-1]+data_teams$I3[2*i-1]+data_teams$I4[2*i-1]+data_teams$I5[2*i-1]+data_teams$I6[2*i-1]+
+                                    data_teams$I7[2*i-1]+data_teams$I8[2*i-1]+data_teams$I9[2*i-1]+data_teams$I10[2*i-1]+data_teams$I11[2*i-1]+data_teams$I12[2*i-1]+
+                                    data_teams$I13[2*i-1]+data_teams$I14[2*i-1]+data_teams$I15[2*i-1]+data_teams$I16[2*i-1]+data_teams$I17[2*i-1]+data_teams$I18[2*i-1]+
+                                    data_teams$I19[2*i-1]+data_teams$I20[2*i-1]+data_teams$I21[2*i-1]+data_teams$I22[2*i-1]+data_teams$I23[2*i-1]+data_teams$I24[2*i-1]+
+                                    data_teams$I24[2*i-1]+data_teams$I25[2*i-1]
+  
+  data$Win_NBA[i]   <-              ifelse(abs(data_teams$`Opening Odds`[2*i])>=100,
+                                    ifelse(as.numeric(gsub("+", "", data_teams$`Opening Odds`[2*i]))<0,100/abs(as.numeric(gsub("+", "", data_teams$`Opening Odds`[2*i])))+1,
+                                    ifelse(as.numeric(gsub("+", "", data_teams$`Opening Odds`[2*i]))==0,1.95,as.numeric(gsub("+", "",   data_teams$`Opening Odds`[2*i]))/100+1)),1)
+                                    
+                                    
+  
+  data$Defeat_NBA[i]<-              ifelse(abs(data_teams$`Opening Odds`[2*i-1])>=100,
+                                    ifelse(as.numeric(gsub("+", "", data_teams$`Opening Odds`[2*i-1]))<0,100/abs(as.numeric(gsub("+", "", data_teams$`Opening Odds`[2*i-1])))+1,
+                                    ifelse(as.numeric(gsub("+", "", data_teams$`Opening Odds`[2*i-1]))==0,1.95,as.numeric(gsub("+", "",   data_teams$`Opening Odds`[2*i-1]))/100+1)),1)
+  
+  data$Win_NBA[i]<-                 ifelse(data$Win_NBA[i]>1,data$Win_NBA[i], 1/(1.00-1/data$Defeat_NBA[i]))
+  
+  data$Defeat_NBA[i]<-              ifelse(data$Defeat_NBA[i]>1,data$Defeat_NBA[i], 1/(1.00-1/data$Win_NBA[i]))
+  
+  
+  data$Wind[i]<-                    as.numeric(data_teams$Wind[2*i-1])
+  data$Temperature[i]<-             as.numeric(data_teams$Temperature[2*i-1])
+  
+  data$Duration[i]<-                as.numeric(data_teams$Duration[2*i-1]) 
+  
+  data$R_1[i]<-                     data_teams$R[2*i]
+  data$R_2[i]<-                     data_teams$R[2*i-1]
+  data$H_1[i]<-                     data_teams$H[2*i]
+  data$H_2[i]<-                     data_teams$H[2*i-1]
+  data$E_1[i]<-                     data_teams$E[2*i]
+  data$E_2[i]<-                     data_teams$E[2*i-1]
+  
+  data$AB_1[i]<-                    data_teams$AB[2*i]
+  data$AB_2[i]<-                    data_teams$AB[2*i-1]
+  data$R_B_1[i]<-                   data_teams$R_B[2*i]
+  data$R_B_2[i]<-                   data_teams$R_B[2*i-1]
+  
+  data$H_B_1[i]<-                   data_teams$H_B[2*i]
+  data$H_B_2[i]<-                   data_teams$H_B[2*i-1]
+  
+  data$RBI_1[i]<-                   data_teams$RBI[2*i]
+  data$RBI_2[i]<-                   data_teams$RBI[2*i-1]
+  
+  data$BB_B_1[i]<-                  data_teams$BB_B[2*i]
+  data$BB_B_2[i]<-                  data_teams$BB_B[2*i-1]
+  
+  data$B_1_1[i]<-                   data_teams$`1B`[2*i]
+  data$B_1_2[i]<-                   data_teams$`1B`[2*i-1]
+  
+  data$B_2_1[i]<-                   data_teams$`2B`[2*i]
+  data$B_2_2[i]<-                   data_teams$`2B`[2*i-1]
+  
+  data$B_3_1[i]<-                   data_teams$`3B`[2*i]
+  data$B_3_2[i]<-                   data_teams$`3B`[2*i-1]
+  
+  data$HR_1[i]<-                    data_teams$HR[2*i]
+  data$HR_2[i]<-                    data_teams$HR[2*i-1]
+  
+  data$TB_1[i]<-                    data_teams$TB[2*i]
+  data$TB_2[i]<-                    data_teams$TB[2*i-1]
+  
+  data$SB_1[i]<-                    data_teams$SB[2*i]
+  data$SB_2[i]<-                    data_teams$SB[2*i-1]
+  
+  data$HBP_1[i]<-                   data_teams$HBP[2*i]
+  data$HBP_2[i]<-                   data_teams$HBP[2*i-1]
+  
+  data$SO_1[i]<-                    data_teams$SO[2*i]
+  data$SO_2[i]<-                    data_teams$SO[2*i-1]
+  
+  data$PA_1[i]<-                    data_teams$PA[2*i]
+  data$PA_2[i]<-                    data_teams$PA[2*i-1]
+  
+  data$PB_1[i]<-                    data_teams$P_B[2*i]
+  data$PB_2[i]<-                    data_teams$P_B[2*i-1]
+  
+  data$PO_1[i]<-                    data_teams$PO[2*i]
+  data$PO_2[i]<-                    data_teams$PO[2*i-1]
+  
+  data$A_B_1[i]<-                   data_teams$A_B[2*i]
+  data$A_B_2[i]<-                   data_teams$A_B[2*i-1]
+  
+  data$Flag_Win[i]<-                ifelse(is.na(data_teams$W[2*i])==TRUE,0,data_teams$W[2*i])
+  data$Flag_Defeat[i]<-             1-data$Flag_Win[i]
+  
+  data$IP_1[i]<-                    data_teams$IP[2*i]
+  data$IP_2[i]<-                    data_teams$IP[2*i-1]
+  
+  data$H_P_1[i]<-                   data_teams$H_P[2*i]
+  data$H_P_2[i]<-                   data_teams$H_P[2*i-1]
+  
+  data$R_P_1[i]<-                   data_teams$R_P[2*i]
+  data$R_P_2[i]<-                   data_teams$R_P[2*i-1]
+  
+  data$ER_P_1[i]<-                  data_teams$ER_P[2*i]
+  data$ER_P_2[i]<-                  data_teams$ER_P[2*i-1]
+  
+  data$ER_P_1[i]<-                  data_teams$ER_P[2*i]
+  data$ER_P_2[i]<-                  data_teams$ER_P[2*i-1]
+  
+  data$ERA_P_1[i]<-                 data_teams$ERA_P[2*i]
+  data$ERA_P_2[i]<-                 data_teams$ERA_P[2*i-1]
+  
+  data$P_P_1[i]<-                   data_teams$P_P[2*i]
+  data$P_P_2[i]<-                   data_teams$P_P[2*i-1]
+  
+  data$S_P_1[i]<-                   data_teams$S_P[2*i]
+  data$S_P_2[i]<-                   data_teams$S_P[2*i-1]
+  
+  data$BB_P_1[i]<-                  data_teams$BB_P[2*i]
+  data$BB_P_2[i]<-                  data_teams$BB_P[2*i-1]
+  
+  data$SO_P_1[i]<-                  data_teams$SO_P[2*i]
+  data$SO_P_2[i]<-                  data_teams$SO_P[2*i-1]
+  
+  data$SB_P_1[i]<-                  data_teams$SB_P[2*i]
+  data$SB_P_2[i]<-                  data_teams$SB_P[2*i-1]
+  
+  data$HR_P_1[i]<-                  data_teams$HR_P[2*i]
+  data$HR_P_2[i]<-                  data_teams$HR_P[2*i-1]
+  
+  data$QS_P_1[i]<-                  data_teams$QS_P[2*i]
+  data$QS_P_2[i]<-                  data_teams$QS_P[2*i-1]
+  
+  data$HB_P_1[i]<-                  data_teams$HB_P[2*i]
+  data$HB_P_2[i]<-                  data_teams$HB_P[2*i-1]
+  
+  data$CG_P_1[i]<-                  data_teams$CG_P[2*i]
+  data$CG_P_2[i]<-                  data_teams$CG_P[2*i-1]
+  
+  data$CGSHO_P_1[i]<-               data_teams$CGSHO_P[2*i]
+  data$CGSHO_P_2[i]<-               data_teams$CGSHO_P[2*i-1]
+  
+  data$NH_P_1[i]<-                  data_teams$NH_P[2*i]
+  data$NH_P_2[i]<-                  data_teams$NH_P[2*i-1]
+  
+  data$BF_P_1[i]<-                  data_teams$BF_P[2*i]
+  data$BF_P_2[i]<-                  data_teams$BF_P[2*i-1]
+  
+  data$GB_P_1[i]<-                  data_teams$GB_P[2*i]
+  data$GB_P_2[i]<-                  data_teams$GB_P[2*i-1]
+  
+  data$FB_P_1[i]<-                  data_teams$FB_P[2*i]
+  data$FB_P_2[i]<-                  data_teams$FB_P[2*i-1]
+  
+  data$LD_P_1[i]<-                  data_teams$LD_P[2*i]
+  data$LD_P_2[i]<-                  data_teams$LD_P[2*i-1]
   
 }
 
-directory<-"/root/"
+data$Win_NBA<-ifelse(is.na(data$Win_NBA)==TRUE,1,data$Win_NBA)
+data$Defeat_NBA<-ifelse(is.na(data$Defeat_NBA)==TRUE,1,data$Defeat_NBA)
 
-directory<-"C:/Users/Сергей/Desktop/НЕ ЗАХЛАМЛЯЙ РАБОЧИЙ СТОЛ, СКЛАДЫВАТЬ ВСЕ СЮДА/Сергей/Machine_Learning/Machine_Learning/Machine_Learning/SPORTS/Basketball/"
 
-# download.file("https://www.dropbox.com/sh/tnptj57ppsrh9jg/AAB1aLCt9MYv52OBQ6YWoSe9a?dl=0",
-#               paste(directory, "past.xlsx", sep=""), mode = "wb", extra='curl')
-
-data<-read_excel(paste(directory,  
-                       paste(substr(as.character(Sys.Date()-1), 6,7),"-",  substr(as.character(Sys.Date()-1), 9,10), "-",substr(as.character(Sys.Date()-1), 1,4), sep=""),
-                       "-nba-season-team-feed.xlsx", sep=""), sheet="NBA-TEAM-FEED")
-
-file.remove(dir(  
-  directory, 
-  pattern = "feed", 
-  full.names = TRUE
-))
-
-colnames(data)[30]<-"TO..TO"
-
-data$Win<-1.2
-data$Defeat<-6.0
-data$REG_PO<-ifelse(grepl("Regular", data$DATASET)==TRUE, "Regular", "Playoff")
-
-past<-data.frame(matrix(data=NA, nrow=nrow(data)/2, ncol=57))
-
-names(past)         <-              c("Season","REG_PO", "Date", "Team_1", "Team_2", "Goal_1", "Goal_2", "Win_NBA", "Defeat_NBA", 
-                                    "X1Q_1", "X2Q_1", "X3Q_1", "X4Q_1", "OT_1","X1Q_2", "X2Q_2", "X3Q_2", "X4Q_2", "OT_2", 
-                                   "FG_1",	"FGA_1",	"X3P_1",	"X3PA_1",	"FT_1",	"FTA_1",	"OR_1",	"DR_1",	"TOT_1",	
-                                   "A_1",	"PF_1",	"ST_1",	"TO_1",	"TO.TO_1",	"BL_1", "POSS_1",	"PACE_1",	"OEFF_1",	"DEFF_1",
-                                   "FG_2",	"FGA_2",	"X3P_2",	"X3PA_2",	"FT_2",	"FTA_2",	"OR_2",	"DR_2",	"TOT_2",	
-                                   "A_2",	"PF_2",	"ST_2",	"TO_2",	"TO.TO_2",	"BL_2", "POSS_2",	"PACE_2",	"OEFF_2",	"DEFF_2")
-
-for (i in 1:nrow(past))
+for (i in 1:nrow(data))
   
 {
-  past$Season[i]    <-              14
-  past$REG_PO[i]    <-              ifelse(grepl("Regular", data$DATASET[2*i])==TRUE, "Regular", "Playoff")
-  
-  past$Date[i]      <-              as.Date(data$DATE,"%m/%d/%Y")[2*i]
-  
-  past$Team_1[i]    <-              data$TEAM[2*i]
-  past$Team_2[i]    <-              data$TEAM[2*i-1]
-  
-  past$Goal_1[i]    <-              data$PTS[2*i]
-  past$Goal_2[i]    <-              data$PTS[2*i-1]
-  
-  past$Win_NBA[i]   <-              ifelse(as.numeric(gsub("+", "", data$MONEYLINE[2*i]))<0,100/abs(as.numeric(gsub("+", "", data$MONEYLINE[2*i])))+1,
-                                   ifelse(as.numeric(gsub("+", "", data$MONEYLINE[2*i]))==0,1.95,as.numeric(gsub("+", "", data$MONEYLINE[2*i]))/100+1))
-  
-  past$Defeat_NBA[i]<-              ifelse(as.numeric(gsub("+", "", data$MONEYLINE[2*i-1]))<0,100/abs(as.numeric(gsub("+", "", data$MONEYLINE[2*i-1])))+1,
-                                   ifelse(as.numeric(gsub("+", "", data$MONEYLINE[2*i-1]))==0,1.95,as.numeric(gsub("+", "", data$MONEYLINE[2*i-1]))/100+1))
-
-  past$X1Q_1[i]     <-              data$`1Q`[2*i]
-  past$X2Q_1[i]     <-              data$`1Q`[2*i]
-  past$X3Q_1[i]     <-              data$`1Q`[2*i]
-  past$X4Q_1[i]     <-              data$`1Q`[2*i]
-  
-  past$OT_1[i]      <-              ifelse(is.na(data$OT1[2*i])==TRUE,0,data$OT1[2*i])+
-                                   ifelse(is.na(data$OT2[2*i])==TRUE,0,data$OT2[2*i])+
-                                   ifelse(is.na(data$OT3[2*i])==TRUE,0,data$OT3[2*i])+
-                                   ifelse(is.na(data$OT4[2*i])==TRUE,0,data$OT4[2*i])+
-                                   ifelse(is.na(data$OT5[2*i])==TRUE,0,data$OT5[2*i])
-  
-  past$X1Q_2[i]     <-              data$`1Q`[2*i-1]
-  past$X2Q_2[i]     <-              data$`1Q`[2*i-1]
-  past$X3Q_2[i]     <-              data$`1Q`[2*i-1]
-  past$X4Q_2[i]     <-              data$`1Q`[2*i-1]
-  
-  past$OT_2[i]      <-              ifelse(is.na(data$OT1[2*i-1])==TRUE,0,data$OT1[2*i-1])+
-                                   ifelse(is.na(data$OT2[2*i-1])==TRUE,0,data$OT2[2*i-1])+
-                                   ifelse(is.na(data$OT3[2*i-1])==TRUE,0,data$OT3[2*i-1])+
-                                   ifelse(is.na(data$OT4[2*i-1])==TRUE,0,data$OT4[2*i-1])+
-                                   ifelse(is.na(data$OT5[2*i-1])==TRUE,0,data$OT5[2*i-1])
-  
-  past$FG_1[i]      <-              data$FG[2*i] 
-  past$FGA_1[i]     <-              data$FGA[2*i]
-  past$X3P_1[i]     <-              data$`3P`[2*i]
-  past$X3PA_1[i]    <-              data$`3PA`[2*i]
-  past$FT_1[i]      <-              data$FT[2*i]
-  past$FTA_1[i]     <-              data$FTA[2*i]
-  past$OR_1[i]      <-              data$OR[2*i]
-  past$DR_1[i]      <-              data$DR[2*i]
-  past$TOT_1[i]     <-              data$TOT[2*i]
-  past$A_1[i]       <-              data$A[2*i]
-  past$PF_1[i]      <-              data$PF[2*i]
-  past$ST_1[i]      <-              data$ST[2*i]
-  past$TO_1[i]      <-              data$TO[2*i]
-  past$TO.TO_1[i]   <-              data$TO..TO[2*i]
-  past$BL_1[i]      <-              data$BL[2*i]
-  past$POSS_1[i]    <-              data$POSS[2*i]
-  past$PACE_1[i]    <-              data$PACE[2*i]
-  past$OEFF_1[i]    <-              data$OEFF[2*i]
-  past$DEFF_1[i]    <-              data$DEFF[2*i]
-  
-  past$FG_2[i]      <-              data$FG[2*i-1]
-  past$FGA_2[i]     <-              data$FGA[2*i-1]
-  past$X3P_2[i]     <-              data$`3P`[2*i-1]
-  past$X3PA_2[i]    <-              data$`3PA`[2*i-1]
-  past$FT_2[i]      <-              data$FT[2*i-1]
-  past$FTA_2[i]     <-              data$FTA[2*i-1]
-  past$OR_2[i]      <-              data$OR[2*i-1]
-  past$DR_2[i]      <-              data$DR[2*i-1]
-  past$TOT_2[i]     <-              data$TOT[2*i-1]
-  past$A_2[i]       <-              data$A[2*i-1]
-  past$PF_2[i]      <-              data$PF[2*i-1]
-  past$ST_2[i]      <-              data$ST[2*i-1]
-  past$TO_2[i]      <-              data$TO[2*i-1]
-  past$TO.TO_2[i]   <-              data$TO..TO[2*i-1]
-  past$BL_2[i]      <-              data$BL[2*i-1]
-  past$POSS_2[i]    <-              data$POSS[2*i-1]
-  past$PACE_2[i]    <-              data$PACE[2*i-1]
-  past$OEFF_2[i]    <-              data$OEFF[2*i-1]
-  past$DEFF_2[i]    <-              data$DEFF[2*i-1]
-  
+  if (data$Win_NBA[i]<2.0)
+    
+  {
+    data$Win_NBA[i]<-data$Win_NBA[i]*1.00
+    data$Defeat_NBA[i]<-1/(1.035-1/data$Win_NBA[i])
   }
-
-past$Date<-as.Date(past$Date, origin = "1970-01-01")
-
-
-future<-read_excel(paste(directory, "basketball_future.xlsx", sep=""))
-future$Date<-as.Date(future$Date,"%y-%m-%d")
-future$Win<-as.numeric(future$Win)
-future$Defeat<-as.numeric(future$Defeat)
-
-time<-data.frame(future[,c("Team_1", "Team_2", "Time")])
-time$Time<-substr(as.character(time$Time), 12, 20)
-colnames(time)<-c("Team_1", "Team_2", "Time")
-
-future$REG_PO    <- "Regular"
-future$Season<-14
-
-future<-data.frame(future$Season,
-                   future$REG_PO,
-                   future$Date,
-                   future$Team_1,
-                   future$Team_2,
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   future$Win,
-                   future$Defeat,
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))),
-                   c(rep(NA,nrow(future))))  
-
-names(future)         <-              c("Season","REG_PO", "Date", "Team_1", "Team_2", "Goal_1", "Goal_2", "Win_NBA", "Defeat_NBA", 
-                                      "X1Q_1", "X2Q_1", "X3Q_1", "X4Q_1", "OT_1","X1Q_2", "X2Q_2", "X3Q_2", "X4Q_2", "OT_2", 
-                                      "FG_1",	"FGA_1",	"X3P_1",	"X3PA_1",	"FT_1",	"FTA_1",	"OR_1",	"DR_1",	"TOT_1",	
-                                      "A_1",	"PF_1",	"ST_1",	"TO_1",	"TO.TO_1",	"BL_1", "POSS_1",	"PACE_1",	"OEFF_1",	"DEFF_1",
-                                      "FG_2",	"FGA_2",	"X3P_2",	"X3PA_2",	"FT_2",	"FTA_2",	"OR_2",	"DR_2",	"TOT_2",	
-                                      "A_2",	"PF_2",	"ST_2",	"TO_2",	"TO.TO_2",	"BL_2", "POSS_2",	"PACE_2",	"OEFF_2",	"DEFF_2")
-
-cot<-rbind(past, future)
-
-####################################################################################################################################################################
-
-cot$Date<-as.Date(cot$Date, origin = "1970-01-01")
-cot$Flag_Win<-ifelse(cot$Goal_1>cot$Goal_2,1,0)
-cot$Flag_Defeat<-ifelse(cot$Goal_1<cot$Goal_2,1,0)
-
-cot$Flag_Win_Fora_Minus_5<-ifelse(cot$Goal_1-cot$Goal_2>=5,1,0)
-cot$Flag_Defeat_Fora_Minus_5<-ifelse(cot$Goal_2-cot$Goal_1>=5,1,0)
-
-cot$Total_more_170<-ifelse(cot$Goal_1+cot$Goal_2>170,1,0)
-cot$Total_more_180<-ifelse(cot$Goal_1+cot$Goal_2>180,1,0)
-cot$Total_more_190<-ifelse(cot$Goal_1+cot$Goal_2>190,1,0)
-cot$Total_more_200<-ifelse(cot$Goal_1+cot$Goal_2>200,1,0)
-cot$Total_more_210<-ifelse(cot$Goal_1+cot$Goal_2>210,1,0)
-cot$Total_more_220<-ifelse(cot$Goal_1+cot$Goal_2>220,1,0)
-
-cot$Flag_Ind_total_Team1_more_80<-ifelse(cot$Goal_1>80,1,0)
-cot$Flag_Ind_total_Team1_more_90<-ifelse(cot$Goal_1>90,1,0)
-cot$Flag_Ind_total_Team1_more_100<-ifelse(cot$Goal_1>100,1,0)
-cot$Flag_Ind_total_Team1_more_110<-ifelse(cot$Goal_1>110,1,0)
-cot$Flag_Ind_total_Team1_more_120<-ifelse(cot$Goal_1>120,1,0)
-
-cot$Flag_Ind_total_Team2_more_80<-ifelse(cot$Goal_2>80,1,0)
-cot$Flag_Ind_total_Team2_more_90<-ifelse(cot$Goal_2>90,1,0)
-cot$Flag_Ind_total_Team2_more_100<-ifelse(cot$Goal_2>100,1,0)
-cot$Flag_Ind_total_Team2_more_110<-ifelse(cot$Goal_2>110,1,0)
-cot$Flag_Ind_total_Team2_more_120<-ifelse(cot$Goal_2>120,1,0)
+  
+  if (data$Defeat_NBA[i]<2.0)
+    
+  {
+    data$Defeat_NBA[i]<-data$Defeat_NBA[i]*1.00
+    data$Win_NBA[i]<-1/(1.035-1/data$Defeat_NBA[i])
+  }
+  
+}
 
 n<-5
-
+cot<-data
 result<-data.frame()
 
 for (i in 1:length(unique(cot$Season)))
@@ -385,10 +347,10 @@ for (i in 1:length(unique(cot$Season)))
   
   
   
-  
   ########################################################################## ???????? ####################################################################
   
   for (j in 1:nrow(cot_2))
+  
   {
     
     
@@ -420,40 +382,6 @@ for (i in 1:length(unique(cot$Season)))
     
   }
   
-  
-  ########################################################################## ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Total_Win_Fora_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Flag_Win_Fora_Minus_5,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Flag_Defeat_Fora_Minus_5))
-    
-    
-    cot_2$W_Total_Win_Fora_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Flag_Defeat_Fora_Minus_5,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Flag_Win_Fora_Minus_5))
-    
-    
-    
-  }
-  
-  
-  ##################################################################### ?????????????????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Total_Defeat_Fora_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Flag_Defeat_Fora_Minus_5,
-                                                         subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Flag_Win_Fora_Minus_5))
-    
-    
-    cot_2$W_Total_Defeat_Fora_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Flag_Win_Fora_Minus_5,
-                                                         subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Flag_Defeat_Fora_Minus_5))
-    
-    
-  }
   
   
   ##################################################################### ?????????????? ???????? ####################################################################
@@ -489,368 +417,18 @@ for (i in 1:length(unique(cot$Season)))
   }
   
   
-  ##################################################################### ?????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_Goals_1Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X1Q_1,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X1Q_2))
-    
-    cot_2$W_Plus_Goals_1Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X1Q_2,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X1Q_1))
-    
-    
-  }
-  
-  ##################################################################### ?????????????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_Goals_1Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X1Q_2,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X1Q_1))
-    
-    
-    cot_2$W_Minus_Goals_1Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X1Q_1,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X1Q_2))
-    
-    
-    
-  }
-  
-  
-  ##################################################################### ?????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_Goals_2Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X2Q_1,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X2Q_2))
-    
-    cot_2$W_Plus_Goals_2Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X2Q_2,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X2Q_1))
-    
-    
-  }
-  ##################################################################### ?????????????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_Goals_2Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X2Q_2,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X2Q_1))
-    
-    
-    cot_2$W_Minus_Goals_2Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X2Q_1,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X2Q_2))
-    
-    
-    
-  }
-  
-  ##################################################################### ?????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_Goals_3Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X3Q_1,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X3Q_2))
-    
-    cot_2$W_Plus_Goals_3Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X3Q_2,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X3Q_1))
-    
-    
-  }
-  
-  ##################################################################### ?????????????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_Goals_3Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X3Q_2,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X3Q_1))
-    
-    
-    cot_2$W_Minus_Goals_3Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X3Q_1,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X3Q_2))
-    
-    
-    
-  }
-  
-  ##################################################################### ?????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_Goals_4Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X4Q_1,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X4Q_2))
-    
-    cot_2$W_Plus_Goals_4Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X4Q_2,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X4Q_1))
-    
-    
-  }
-  ##################################################################### ?????????????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_Goals_4Q_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X4Q_2,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X4Q_1))
-    
-    
-    cot_2$W_Minus_Goals_4Q_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X4Q_1,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X4Q_2))
-    
-    
-    
-  }
-  
-  
-  ##################################################################### ?????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_Goals_OT_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$OT_1,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$OT_2))
-    
-    cot_2$W_Plus_Goals_OT_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$OT_2,
-                                                     subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$OT_1))
-    
-    
-  }
-  
-  ##################################################################### ?????????????????????? ???????? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_Goals_OT_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$OT_2,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$OT_1))
-    
-    
-    cot_2$W_Minus_Goals_OT_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$OT_1,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$OT_2))
-    
-    
-    
-  }
-  
-  
-  ##################################################################### ???????????? ####################################################################
-  
-  ##################################################################### Total More 170 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_170_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_170,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_170))
-    
-    
-    cot_2$W_Total_More_170_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_170,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_170))
-    
-    
-  }
-  
-  
-  ##################################################################### Total More 180 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_180_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_180,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_180))
-    
-    
-    cot_2$W_Total_More_180_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_180,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_180))
-    
-    
-  }
-  
-  ##################################################################### Total More 190 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_190_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_190,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_190))
-    
-    
-    cot_2$W_Total_More_190_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_190,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_190))
-    
-    
-  }
-  
-  ##################################################################### Total More 200 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_200_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_200,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_200))
-    
-    
-    cot_2$W_Total_More_200_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_200,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_200))
-    
-    
-  }
-  
-  ##################################################################### Total More 210 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_210_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_210,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_210))
-    
-    
-    cot_2$W_Total_More_210_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_210,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_210))
-    
-    
-  }
-  
-  ##################################################################### Total More 220 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_220_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_220,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_220))
-    
-    
-    cot_2$W_Total_More_220_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_220,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_220))
-    
-    
-  }
-  
-  
-  
-  ##################################################################### Total More 190 ?? ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Total_More_190_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Total_more_190,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Total_more_190))
-    
-    
-    cot_2$W_Total_More_190_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Total_more_190,
-                                                      subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Total_more_190))
-    
-    
-  }
-  
-  
-  ##################################################################### Ind Total More 80 ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Ind_Total_more_80_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team1_more_80,
-                                                         subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team2_more_80))
-    
-    
-    cot_2$W_Ind_Total_more_80_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team2_more_80,
-                                                         subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team1_more_80))
-    
-    
-  }
-  
-  
-  ##################################################################### Ind Total More 90 ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Ind_Total_more_90_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team1_more_90,
-                                                         subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team2_more_90))
-    
-    
-    cot_2$W_Ind_Total_more_90_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team2_more_90,
-                                                         subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team1_more_90))
-    
-    
-  }
-  
-  ##################################################################### Ind Total More 100 ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Ind_Total_more_100_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team1_more_100,
-                                                          subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team2_more_100))
-    
-    
-    cot_2$W_Ind_Total_more_100_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team2_more_100,
-                                                          subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team1_more_100))
-    
-    
-  }
-  
+
   ##################################################################### Ind Total More 110 ####################################################################
   
   for (j in 1:nrow(cot_2))
   {
     
     
-    cot_2$W_Ind_Total_more_110_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team1_more_110,
-                                                          subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$Flag_Ind_total_Team2_more_110))
+    cot_2$W_Plus_R_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$R_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$R_2))
     
-    
-    cot_2$W_Ind_Total_more_110_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team2_more_110,
-                                                          subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$Flag_Ind_total_Team1_more_110))
-    
-    
-  }
-  
-  ##################################################################### Ind Total More 110 ####################################################################
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_FG_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FG_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FG_2))
-    
-    cot_2$W_Plus_FG_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FG_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FG_1))
+    cot_2$W_Plus_R_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$R_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$R_1))
     
     
     
@@ -860,107 +438,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_FG_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FG_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FG_1))
+    cot_2$W_Minus_R_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$R_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$R_1))
     
     
-    cot_2$W_Minus_FG_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FG_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FG_2))
-    
-    
-    
-  }
-  
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_FGA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FGA_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FGA_2))
-    
-    
-    cot_2$W_Plus_FGA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FGA_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FGA_1))
-    
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_FGA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FGA_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FGA_1))
-    
-    
-    cot_2$W_Minus_FGA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FGA_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FGA_2))
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Plus_3P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X3P_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X3P_2))
-    
-    
-    
-    cot_2$W_Plus_3P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X3P_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X3P_1))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_3P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X3P_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X3P_1))
-    
-    
-    cot_2$W_Minus_3P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X3P_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X3P_2))
-    
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Plus_3PA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X3PA_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X3PA_2))
-    
-    
-    
-    cot_2$W_Plus_3PA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X3PA_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X3PA_1))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_3PA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$X3PA_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$X3PA_1))
-    
-    
-    cot_2$W_Minus_3PA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$X3PA_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$X3PA_2))
+    cot_2$W_Minus_R_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$R_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$R_2))
     
     
     
@@ -971,85 +454,11 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Plus_FT_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FT_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FT_2))
+    cot_2$W_Plus_H_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$H_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$H_2))
     
-    
-    cot_2$W_Plus_FT_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FT_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FT_1))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_FT_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FT_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FT_1))
-    
-    
-    cot_2$W_Minus_FT_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FT_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FT_2))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_FTA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FTA_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FTA_2))
-    
-    
-    cot_2$W_Plus_FTA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FTA_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FTA_1))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_FTA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FTA_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FTA_1))
-    
-    
-    cot_2$W_Minus_FTA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FTA_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FTA_2))
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    
-    cot_2$W_Plus_OR_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$OR_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$OR_2))
-    
-    
-    cot_2$W_Plus_OR_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$OR_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$OR_1))
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_OR_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$OR_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$OR_1))
-    
-    cot_2$W_Minus_OR_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$OR_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$OR_2))
+    cot_2$W_Plus_H_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$H_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$H_1))
     
     
     
@@ -1059,12 +468,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Plus_DR_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$DR_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$DR_2))
+    cot_2$W_Minus_H_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$H_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$H_1))
     
     
-    cot_2$W_Plus_DR_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$DR_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$DR_1))
+    cot_2$W_Minus_H_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$H_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$H_2))
     
     
     
@@ -1075,12 +484,26 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_DR_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$DR_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$DR_1))
+    cot_2$W_Plus_E_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$E_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$E_2))
+    
+    cot_2$W_Plus_E_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$E_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$E_1))
     
     
-    cot_2$W_Minus_DR_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$DR_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$DR_2))
+    
+  }
+  
+  for (j in 1:nrow(cot_2))
+  {
+    
+    
+    cot_2$W_Minus_E_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$E_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$E_1))
+    
+    
+    cot_2$W_Minus_E_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$E_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$E_2))
     
     
     
@@ -1090,41 +513,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Plus_A_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$A_1,
-                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$A_2))
+    cot_2$W_Plus_AB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$AB_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$AB_2))
     
+    cot_2$W_Plus_AB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$AB_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$AB_1))
     
-    cot_2$W_Plus_A_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$A_2,
-                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$A_1))
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Minus_A_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$A_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$A_1))
-    
-    
-    cot_2$W_Minus_A_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$A_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$A_2))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_PF_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PF_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PF_2))
-    
-    
-    cot_2$W_Plus_PF_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PF_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PF_1))
     
     
   }
@@ -1133,27 +527,13 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_PF_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PF_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PF_1))
+    cot_2$W_Minus_AB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$AB_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$AB_1))
     
     
-    cot_2$W_Minus_PF_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PF_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PF_2))
+    cot_2$W_Minus_AB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$AB_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$AB_2))
     
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_ST_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$ST_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$ST_2))
-    
-    
-    cot_2$W_Plus_ST_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$ST_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$ST_1))
     
     
   }
@@ -1162,26 +542,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_ST_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$ST_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$ST_1))
+    cot_2$W_Plus_R_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$R_B_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$R_B_2))
     
+    cot_2$W_Plus_R_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$R_B_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$R_B_1))
     
-    cot_2$W_Minus_ST_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$ST_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$ST_2))
-    
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_TO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$TO_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$TO_2))
-    
-    
-    cot_2$W_Plus_TO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$TO_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$TO_1))
     
     
   }
@@ -1190,26 +556,13 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_TO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$TO_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$TO_1))
+    cot_2$W_Minus_R_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$R_B_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$R_B_1))
     
     
-    cot_2$W_Minus_TO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$TO_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$TO_2))
+    cot_2$W_Minus_R_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$R_B_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$R_B_2))
     
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_TO_TO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$TO.TO_1,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$TO.TO_2))
-    
-    
-    cot_2$W_Plus_T0_TO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$TO.TO_2,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$TO.TO_1))
     
     
   }
@@ -1218,27 +571,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_TO_TO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$TO.TO_2,
-                                                   subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$TO.TO_1))
+    cot_2$W_Plus_H_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$H_B_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$H_B_2))
     
+    cot_2$W_Plus_H_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$H_B_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$H_B_1))
     
-    cot_2$W_Minus_T0_TO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$TO.TO_1,
-                                                   subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$TO.TO_2))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_BL_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BL_1,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BL_2))
-    
-    
-    cot_2$W_Plus_BL_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BL_2,
-                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BL_1))
     
     
   }
@@ -1247,27 +585,13 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_BL_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BL_2,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BL_1))
+    cot_2$W_Minus_H_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$H_B_2,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$H_B_1))
     
     
-    cot_2$W_Minus_BL_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BL_1,
-                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BL_2))
+    cot_2$W_Minus_H_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$H_B_1,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$H_B_2))
     
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_POSS_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$POSS_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$POSS_2))
-    
-    
-    cot_2$W_Plus_POSS_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$POSS_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$POSS_1))
     
     
   }
@@ -1276,27 +600,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_POSS_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$POSS_2,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$POSS_1))
+    cot_2$W_Plus_RBI_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$RBI_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$RBI_2))
     
+    cot_2$W_Plus_RBI_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$RBI_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$RBI_1))
     
-    cot_2$W_Minus_POSS_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$POSS_1,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$POSS_2))
-    
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_PACE_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PACE_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PACE_2))
-    
-    
-    cot_2$W_Plus_PACE_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PACE_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PACE_1))
     
     
   }
@@ -1305,27 +614,13 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_PACE_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PACE_2,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PACE_1))
+    cot_2$W_Minus_RBI_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$RBI_2,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$RBI_1))
     
     
-    cot_2$W_Minus_PACE_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PACE_1,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PACE_2))
+    cot_2$W_Minus_RBI_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$RBI_1,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$RBI_2))
     
-    
-  }
-  
-  
-  for (j in 1:nrow(cot_2))
-  {
-    
-    
-    cot_2$W_Plus_OEFF_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$OEFF_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$OEFF_2))
-    
-    
-    cot_2$W_Plus_OEFF_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$OEFF_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$OEFF_1))
     
     
   }
@@ -1334,12 +629,12 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Minus_OEFF_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$OEFF_2,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$OEFF_1))
+    cot_2$W_Plus_BB_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BB_B_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BB_B_2))
     
+    cot_2$W_Plus_BB_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BB_B_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BB_B_1))
     
-    cot_2$W_Minus_OEFF_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$OEFF_1,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$OEFF_2))
     
     
   }
@@ -1348,249 +643,1294 @@ for (i in 1:length(unique(cot$Season)))
   {
     
     
-    cot_2$W_Plus_DEFF_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$DEFF_1,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$DEFF_2))
+    cot_2$W_Minus_BB_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BB_B_2,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BB_B_1))
     
     
-    cot_2$W_Plus_DEFF_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$DEFF_2,
-                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$DEF_1))
+    cot_2$W_Minus_BB_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BB_B_1,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BB_B_2))
     
-    
-  }
-  
-  for (j in 1:nrow(cot_2))
-    
-  {
-    
-    
-    cot_2$W_Minus_DEFF_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$DEFF_2,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$DEFF_1))
-    
-    
-    cot_2$W_Minus_DEFF_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$DEFF_1,
-                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$DEFF_2))
     
     
   }
   
-  result<-rbind(result,cot_2)
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_B_1_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$B_1_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$B_1_2))
+  
+  cot_2$W_Plus_B_1_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$B_1_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$B_1_1))
+  
+  
   
 }
 
-#write.csv(result, "Factors_Calculation_Additional_Data_New_Info.csv", row.names=FALSE)
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_B_1_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$B_1_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$B_1_1))
+  
+  
+  cot_2$W_Minus_B_1_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$B_1_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$B_1_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_B_2_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$B_2_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$B_2_2))
+  
+  cot_2$W_Plus_B_2_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$B_2_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$B_2_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_B_2_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$B_2_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$B_2_1))
+  
+  
+  cot_2$W_Minus_B_2_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$B_2_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$B_2_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_B_3_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$B_3_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$B_3_2))
+  
+  cot_2$W_Plus_B_3_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$B_3_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$B_3_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_B_3_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$B_3_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$B_3_1))
+  
+  
+  cot_2$W_Minus_B_3_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$B_3_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$B_3_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_HR_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HR_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HR_2))
+  
+  cot_2$W_Plus_HR_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HR_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HR_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_HR_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HR_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HR_1))
+  
+  
+  cot_2$W_Minus_HR_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HR_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HR_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_TB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$TB_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$TB_2))
+  
+  cot_2$W_Plus_TB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$TB_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$TB_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_TB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$TB_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$TB_1))
+  
+  
+  cot_2$W_Minus_TB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$TB_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$TB_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_SB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SB_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SB_2))
+  
+  cot_2$W_Plus_SB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SB_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SB_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_SB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SB_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SB_1))
+  
+  
+  cot_2$W_Minus_SB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SB_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SB_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_HBP_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HBP_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HBP_2))
+  
+  cot_2$W_Plus_HBP_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HBP_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HBP_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_HBP_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HBP_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HBP_1))
+  
+  
+  cot_2$W_Minus_HBP_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HBP_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HBP_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_SO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SO_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SO_2))
+  
+  cot_2$W_Plus_SO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SO_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SO_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_SO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SO_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SO_1))
+  
+  
+  cot_2$W_Minus_SO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SO_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SO_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_PA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PA_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PA_2))
+  
+  cot_2$W_Plus_PA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PA_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PA_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_PA_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PA_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PA_1))
+  
+  
+  cot_2$W_Minus_PA_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PA_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PA_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_PB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PB_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PB_2))
+  
+  cot_2$W_Plus_PB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PB_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PB_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_PB_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PB_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PB_1))
+  
+  
+  cot_2$W_Minus_PB_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PB_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PB_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_A_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$A_B_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$A_B_2))
+  
+  cot_2$W_Plus_A_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$A_B_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$A_B_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_A_B_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$A_B_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$A_B_1))
+  
+  
+  cot_2$W_Minus_A_B_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$A_B_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$A_B_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_IP_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$IP_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$IP_2))
+  
+  cot_2$W_Plus_IP_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$IP_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$IP_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_IP_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$IP_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$IP_1))
+  
+  
+  cot_2$W_Minus_IP_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$IP_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$IP_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_H_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$H_P_1,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$H_P_2))
+  
+  cot_2$W_Plus_H_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$H_P_2,
+                                             subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$H_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_H_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$H_P_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$H_P_1))
+  
+  
+  cot_2$W_Minus_H_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$H_P_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$H_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_R_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$R_P_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$R_P_2))
+  
+  cot_2$W_Plus_R_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$R_P_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$R_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_R_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$R_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$R_P_1))
+  
+  
+  cot_2$W_Minus_R_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$R_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$R_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_ER_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$ER_P_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$ER_P_2))
+  
+  cot_2$W_Plus_ER_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$ER_P_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$ER_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_ER_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$ER_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$ER_P_1))
+  
+  
+  cot_2$W_Minus_ER_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$ER_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$ER_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_ERA_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$ERA_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$ERA_P_2))
+  
+  cot_2$W_Plus_ERA_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$ERA_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$ERA_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_ERA_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$ERA_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$ERA_P_1))
+  
+  
+  cot_2$W_Minus_ERA_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$ERA_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$ERA_P_2))
+  
+  
+  
+}
+
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_P_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$P_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$P_P_2))
+  
+  cot_2$W_Plus_P_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$P_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$P_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_P_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$P_P_2,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$P_P_1))
+  
+  
+  cot_2$W_Minus_P_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$P_P_1,
+                                                 subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$P_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_S_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$S_P_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$S_P_2))
+  
+  cot_2$W_Plus_S_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$S_P_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$S_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_S_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$S_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$S_P_1))
+  
+  
+  cot_2$W_Minus_S_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$S_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$S_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_BB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BB_P_1,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BB_P_2))
+  
+  cot_2$W_Plus_BB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BB_P_2,
+                                              subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BB_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_BB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BB_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BB_P_1))
+  
+  
+  cot_2$W_Minus_BB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BB_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BB_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_SO_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SO_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SO_P_2))
+  
+  cot_2$W_Plus_SO_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SO_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SO_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_SO_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SO_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SO_P_1))
+  
+  
+  cot_2$W_Minus_SO_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SO_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SO_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_SB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SB_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SB_P_2))
+  
+  cot_2$W_Plus_SB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SB_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SB_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_SB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$SB_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$SB_P_1))
+  
+  
+  cot_2$W_Minus_SB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$SB_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$SB_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_HR_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HR_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HR_P_2))
+  
+  cot_2$W_Plus_HR_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HR_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HR_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_HR_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HR_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HR_P_1))
+  
+  
+  cot_2$W_Minus_HR_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HR_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HR_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_QS_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$QS_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$QS_P_2))
+  
+  cot_2$W_Plus_QS_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$QS_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$QS_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_QS_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$QS_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$QS_P_1))
+  
+  
+  cot_2$W_Minus_QS_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$QS_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$QS_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_HB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HB_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HB_P_2))
+  
+  cot_2$W_Plus_HB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HB_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HB_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_HB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$HB_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$HB_P_1))
+  
+  
+  cot_2$W_Minus_HB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$HB_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$HB_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_CG_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$CG_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$CG_P_2))
+  
+  cot_2$W_Plus_CG_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$CG_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$CG_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_CG_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$CG_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$CG_P_1))
+  
+  
+  cot_2$W_Minus_CG_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$CG_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$CG_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_CGSHO_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$CGSHO_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$CGSHO_P_2))
+  
+  cot_2$W_Plus_CGSHO_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$CGSHO_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$CGSHO_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_CGSHO_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$CGSHO_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$CGSHO_P_1))
+  
+  
+  cot_2$W_Minus_CGSHO_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$CGSHO_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$CGSHO_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_NH_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$NH_P_1,
+                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$NH_P_2))
+  
+  cot_2$W_Plus_NH_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$NH_P_2,
+                                                  subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$NH_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_NH_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$NH_P_2,
+                                                   subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$NH_P_1))
+  
+  
+  cot_2$W_Minus_NH_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$NH_P_1,
+                                                   subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$NH_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_BF_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BF_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BF_P_2))
+  
+  cot_2$W_Plus_BF_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BF_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BF_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_BF_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BF_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BF_P_1))
+  
+  
+  cot_2$W_Minus_BF_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BF_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BF_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_BF_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BF_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BF_P_2))
+  
+  cot_2$W_Plus_BF_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BF_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BF_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_BF_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$BF_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$BF_P_1))
+  
+  
+  cot_2$W_Minus_BF_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$BF_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$BF_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_GB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$GB_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$GB_P_2))
+  
+  cot_2$W_Plus_GB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$GB_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$GB_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_GB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$GB_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$GB_P_1))
+  
+  
+  cot_2$W_Minus_GB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$GB_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$GB_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_FB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FB_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FB_P_2))
+  
+  cot_2$W_Plus_FB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FB_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FB_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_FB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FB_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FB_P_1))
+  
+  
+  cot_2$W_Minus_FB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FB_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FB_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_FB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FB_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FB_P_2))
+  
+  cot_2$W_Plus_FB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FB_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FB_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_FB_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$FB_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$FB_P_1))
+  
+  
+  cot_2$W_Minus_FB_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$FB_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$FB_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_LD_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$LD_P_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$LD_P_2))
+  
+  cot_2$W_Plus_LD_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$LD_P_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$LD_P_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_LD_P_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$LD_P_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$LD_P_1))
+  
+  
+  cot_2$W_Minus_LD_P_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$LD_P_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$LD_P_2))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Plus_PO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PO_1,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PO_2))
+  
+  cot_2$W_Plus_PO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PO_2,
+                                               subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PO_1))
+  
+  
+  
+}
+
+for (j in 1:nrow(cot_2))
+{
+  
+  
+  cot_2$W_Minus_PO_T1_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_1[j])))))$PO_2,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_1[j])))))$PO_1))
+  
+  
+  cot_2$W_Minus_PO_T2_All[j]<-weighted_mean(c(subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_2)==as.character(cot_2$Team_2[j])))))$PO_1,
+                                                subset(cot_2, (cot_2$Date<cot_2$Date[j] & ((as.character(cot_2$Team_1)==as.character(cot_2$Team_2[j])))))$PO_2))
+  
+  
+  
+}
+
+result<-rbind(result,cot_2)
+
+}   
+
+write.csv(result, paste(directory, "Factors_Calculation_Baseball_SK.csv", sep=""), row.names = FALSE)
+
+# result$Rand<-runif(1, 0.0, 1.0)
+# 
+# result<-merge(x = result,
+#               y = data[,c("Game", "Win_NBA", "Defeat_NBA")],
+#               by = "Game", all.x = TRUE)
+# 
+# colnames(result)
+# 
+# drop <- c("Win_NBA.x","Defeat_NBA.x")
+# result = result[,!(names(result) %in% drop)]
+# 
+# names(result)[names(result) == "Win_NBA.y"] <- "Win_NBA"
+# names(result)[names(result) == "Defeat_NBA.y"] <- "Defeat_NBA"
 
 check<-function (Season_list, Flag_filter, Koef_filter, pred_index, koef_index_low, koef_index_high)
-
-  {
-    
-
-    # Season_list<-14
-    # Flag_filter<-"Flag_Win_Fora_Minus_5"
-    # Koef_filter<-"Win_NBA"
-    # pred_index<-0.6
-    # koef_index_low<-1.2
-    # koef_index_high<-2.0
-
-    history<-read.csv(paste(directory, "Factors_Calculation_Additional_Data_New_Info.csv", sep=""), sep=",",h=T)
-    history$Date<-as.Date(history$Date,"%Y-%m-%d")
-    history<-subset(history, history$Season>=1)
-
-    
-    colnames(history)[match(Flag_filter,colnames(history))]<-"Flag"
-
-    validation<-subset(history, history$Match_T1_Home>=5 & history$Match_T2_Guest>=5 & history$Season!=Season_list)
-    
-    validation<-validation[,c("Flag",
-                              "Win_NBA",
-                              "Defeat_NBA",
-                              "W_Total_Win_T1_All",
-                              "W_Total_Win_Fora_T2_All",
-                              "W_Total_Defeat_Fora_T1_All",
-                              "W_Total_Win_Fora_T1_All",
-                              "W_Total_Defeat_T1_All",
-                              "W_Total_Win_T2_All",
-                              "W_Total_Defeat_T2_All",
-                              "W_Total_Defeat_Fora_T2_All",
-                              "W_Minus_BL_T2_All",
-                              "W_Plus_Goals_1Q_T2_All",
-                              "W_Minus_DR_T1_All",
-                              "W_Minus_A_T1_All",
-                              "W_Plus_Goals_1Q_T1_All",
-                              "W_Minus_A_T2_All",
-                              "W_Plus_DEFF_T2_All",
-                              "W_Minus_Goals_1Q_T1_All",
-                              "W_Plus_OR_T2_All",
-                              "W_Minus_Goals_1Q_T2_All",
-                              "W_Minus_OEFF_T1_All",
-                              "W_Plus_BL_T1_All",
-                              "W_Minus_Goals_2Q_T2_All",
-                              "W_Plus_OEFF_T1_All",
-                              "W_Minus_OR_T2_All",
-                              "W_Plus_ST_T1_All",
-                              "W_Plus_A_T1_All",
-                              "W_Plus_Goals_2Q_T1_All",
-                              "W_Minus_BL_T1_All",
-                              "W_Plus_PF_T2_All",
-                              "W_Ind_Total_more_110_T1_All",
-                              "W_Plus_A_T2_All",
-                              "W_Plus_3P_T2_All",
-                              "W_Plus_3P_T1_All",
-                              "W_Minus_Goals_OT_T1_All",
-                              "W_Plus_FT_T1_All",
-                              "W_Plus_3PA_T2_All",
-                              "W_Minus_Goals_3Q_T1_All",
-                              "W_Plus_Goals_OT_T1_All",
-                              "W_Plus_OR_T1_All",
-                              "W_Plus_DR_T2_All",
-                              "W_Plus_PACE_T1_All",
-                              "W_Ind_Total_more_80_T1_All",
-                              "W_Minus_OR_T1_All",
-                              "W_Minus_FT_T1_All",
-                              "W_Minus_Goals_4Q_T2_All"
-                              
-    )]
-    
-    control<-subset(result, result$Match_T1_Home>=5 & result$Match_T2_Guest>=5 & result$Season==Season_list)
-    colnames(control)[match(Flag_filter,colnames(control))]<-"Flag"
-    
-    control_Date<-control$Date
-    control_Team_1<-control$Team_1
-    control_Team_2<-control$Team_2
-    control_Goal_1<-control$Goal_1
-    control_Goal_2<-control$Goal_2
-    control_Flag<-control$Flag
-    control_Win<-control$Win_NBA
-    control_Defeat<-control$Defeat_NBA
-    control_Koef<-control[,Koef_filter]
-    control_Exodus<-ifelse(Flag_filter=="Flag_Win_Fora_Minus_5",
-                    c(rep("Fora -5 Team_1", length(control_Date))),
-                    c(rep("Fora -5 Team_2", length(control_Date))))
-
-    control<-control[,c("Win_NBA",
-                        "Defeat_NBA",
-                        "W_Total_Win_T1_All",
-                        "W_Total_Win_Fora_T2_All",
-                        "W_Total_Defeat_Fora_T1_All",
-                        "W_Total_Win_Fora_T1_All",
-                        "W_Total_Defeat_T1_All",
-                        "W_Total_Win_T2_All",
-                        "W_Total_Defeat_T2_All",
-                        "W_Total_Defeat_Fora_T2_All",
-                        "W_Minus_BL_T2_All",
-                        "W_Plus_Goals_1Q_T2_All",
-                        "W_Minus_DR_T1_All",
-                        "W_Minus_A_T1_All",
-                        "W_Plus_Goals_1Q_T1_All",
-                        "W_Minus_A_T2_All",
-                        "W_Plus_DEFF_T2_All",
-                        "W_Minus_Goals_1Q_T1_All",
-                        "W_Plus_OR_T2_All",
-                        "W_Minus_Goals_1Q_T2_All",
-                        "W_Minus_OEFF_T1_All",
-                        "W_Plus_BL_T1_All",
-                        "W_Minus_Goals_2Q_T2_All",
-                        "W_Plus_OEFF_T1_All",
-                        "W_Minus_OR_T2_All",
-                        "W_Plus_ST_T1_All",
-                        "W_Plus_A_T1_All",
-                        "W_Plus_Goals_2Q_T1_All",
-                        "W_Minus_BL_T1_All",
-                        "W_Plus_PF_T2_All",
-                        "W_Ind_Total_more_110_T1_All",
-                        "W_Plus_A_T2_All",
-                        "W_Plus_3P_T2_All",
-                        "W_Plus_3P_T1_All",
-                        "W_Minus_Goals_OT_T1_All",
-                        "W_Plus_FT_T1_All",
-                        "W_Plus_3PA_T2_All",
-                        "W_Minus_Goals_3Q_T1_All",
-                        "W_Plus_Goals_OT_T1_All",
-                        "W_Plus_OR_T1_All",
-                        "W_Plus_DR_T2_All",
-                        "W_Plus_PACE_T1_All",
-                        "W_Ind_Total_more_80_T1_All",
-                        "W_Minus_OR_T1_All",
-                        "W_Minus_FT_T1_All",
-                        "W_Minus_Goals_4Q_T2_All"
-    )]
-   
-    bst <- xgb.load(paste(directory, 'xgb.model_', Koef_filter, sep=""))
-     
-    sample=data.frame(control_Date,  
-                      control_Team_1, 
-                      control_Team_2, 
-                      control_Goal_1, 
-                      control_Goal_2, 
-                      control_Flag,
-                      # boost(validation,
-                      #       control,
-                      #       Koef_filter),
-                      predict(bst, data.matrix(control)),
-                      control_Koef,
-                      control_Win,
-                      control_Defeat,
-                      c(rep(control_Exodus, length(control_Koef))))
-    
-    names(sample)<-c("Date","Team_1", "Team_2", "Goal_1", "Goal_2", "Flag", "Pred", "Koef", "Koef_Win", "Koef_Defeat", "Exodus")
-    sample$Date<-as.Date(sample$Date,"%Y/%m/%d")
-    sample<-sample[with(sample,order(sample$Date)),]
-    #plot.roc(sample$Flag, sample$Koef,print.auc=T) 
-
-    write.table(subset(sample, is.na(sample$Flag)==TRUE), paste(directory, "For_Me_Basketball.csv", sep=""), sep=",", col.names = !file.exists(paste(directory, "For_Me_Basketball.csv", sep="")), append = T, row.names = FALSE)
-    
-    # sample_Win<-subset(sample, sample$Pred>=pred_index & sample$Koef>=koef_index_low & sample$Koef<=koef_index_high)
-    # #sample_Win<-subset(sample, sample$Pred>=0.65 & sample$Koef>=1.2 & sample$Koef<=2.0)
-    # sample_Win$Koef<-sample_Win$Koef*1.2
-    
-    # ifelse(Flag_filter=="Flag_Win_Fora_Minus_5",
-    #        sample$Koef<-ifelse(sample$Goal_1-sample$Goal_2==5,1,sample$Koef),
-    #        sample$Koef<-ifelse(sample$Goal_2-sample$Goal_2==1,1,sample$Koef))
-    #sample_Win$Flag<-ifelse(sample_Win$Goal_1-sample_Win$Goal_2>=5,1,0)
-    #sample_Win<-sample_Win[with(sample_Win, order(sample_Win$Date)),]
-    
-    # profit(sample_Win)
-    # 
-    sample_test=data.frame(sample$Date,  sample$Team_1, sample$Team_2, sample$Goal_1, sample$Goal_2, sample$Flag,
-                           sample$Pred, sample$Koef, sample$Exodus)
-
-    names(sample_test)<-c("Date","Team_1", "Team_2", "Goal_1", "Goal_2", "Flag", "Pred", "Koef", "Exodus")
-    #sample_test$Flag<-ifelse(sample_test$Goal_1-sample_test$Goal_2>=5,1,0)
-    sample_test$Koef<-sample_test$Koef*1.2
-
-    ifelse(Flag_filter=="Flag_Win_Fora_Minus_5",
-           sample_test$Koef<-ifelse(is.na(sample_test$Flag)==FALSE,
-                                    ifelse(sample_test$Goal_1-sample_test$Goal_2==5,1,sample_test$Koef),
-                                    sample_test$Koef),
-           sample_test$Koef<-ifelse(is.na(sample_test$Flag)==FALSE,
-                                    ifelse(sample_test$Goal_2-sample_test$Goal_1==5,1,sample_test$Koef),
-                                    sample_test$Koef))
-
-    sample_test<-sample_test[with(sample_test, order(sample_test$Date)),]
-    sample_Win<-                     pizdez(sample_test, 1.2, pred_index)
-    #profit(sample_Win)
-    
-return (sample_Win)
-
-}
-
-for (season in 14:14)
   
 {
   
-  sample_Win_F_overall<-data.frame()
-  sample_Win_F_overall<-rbind(sample_Win_F_overall, check(season , "Flag_Win_Fora_Minus_5",      "Win_NBA",     0.60, 1.2, 2.0))
-  sample_Win_F_overall<-rbind(sample_Win_F_overall, check(season , "Flag_Defeat_Fora_Minus_5",   "Defeat_NBA",  0.60, 1.2, 2.0))
-  sample_Win_F_overall<-sample_Win_F_overall[with(sample_Win_F_overall,order(sample_Win_F_overall$Date)),]
+  
+  # Season_list<-14
+  # Flag_filter<-"Flag_Win_Fora_Minus_5"
+  # Koef_filter<-"Win_NBA"
+  # pred_index<-0.6
+  # koef_index_low<-1.2
+  # koef_index_high<-2.0
+  
+  history<-read.csv(paste(directory, "Factors_Calculation_Baseball_SK.csv", sep=""), sep=",",h=T)
+  history$Date<-as.Date(history$Date,"%Y-%m-%d")
+  
+for (j in 1:25)
+  
+{
+   
+  for (i in 1:nrow(history))
+    
+  {
+  
+  history$Rand[i]<-runif(1, 0.0, 1.0)
+  
+  }
+
+  
+  # control<-subset(history, history$Match_T1_Home>=5 & history$Match_T2_Guest>=5 & history$Rand>=0.95)
+  # validation<-subset(history, history$Match_T1_Home>=5 & history$Match_T2_Guest>=5 & history$Rand<0.95)
+  # 
+  # 
+  # if (j==1)
+  #   
+  # {
+  #   control_overall<-control
+  #   validation_overall<-validation
+  # }
+  # 
+  # control_overall<-rbind( control_overall,  control)
+  # validation_overall<-rbind( validation_overall,  validation)
+  
+
+  
+
+  colnames(history)[match("Flag_Defeat",colnames(history))]<-"Flag"
+  
+  validation<-subset(history, history$Match_T1_Home>=5 & history$Match_T2_Guest>=5 & history$Rand<0.95)
+  
+  # validation<-validation[,c("Flag",
+  #                           "Win_NBA",
+  #                           "Defeat_NBA",
+  #                           colnames(history)[103:(ncol(history)-1)])]
+                          
+  
+  validation<-validation[,c("Flag",
+                            "Defeat_NBA",
+                            "Win_NBA",
+                            "W_Plus_SB_P_T1_All",
+                            "W_Plus_B_3_T1_All",
+                            "W_Plus_FB_P_T2_All",
+                            "W_Plus_FB_P_T1_All",
+                            "W_Minus_SO_T2_All", 
+                            "W_Minus_BB_B_T2_All",
+                            "W_Plus_SB_T2_All",
+                            "W_Minus_E_T1_All",
+                            "W_Plus_QS_P_T1_All",
+                            "W_Plus_SB_T2_All",
+                            "W_Minus_B_3_T1_All")]
+                            
+  control<-subset(history, history$Match_T1_Home>=5 & history$Match_T2_Guest>=5 & history$Rand>=0.95)
+  colnames(control)[match("Flag_Defeat",colnames(control))]<-"Flag"
+  
+  control_Date<-control$Date
+  control_Team_1<-control$Team_1
+  control_Team_2<-control$Team_2
+  control_Goal_1<-control$Goal_1
+  control_Goal_2<-control$Goal_2
+  control_Flag<-control$Flag
+  control_Win<-control$Win_NBA
+  control_Defeat<-control$Defeat_NBA
+  control_Koef<-control$Defeat_NBA
+  control_Exodus<-"2st Team Win"
+  
+  # control<-control[,c("Win_NBA",
+  #                           "Defeat_NBA",
+  #                           colnames(history)[103:(ncol(history)-1)])]
+  
+  control<-control[,c( "Defeat_NBA",
+                       "Win_NBA",
+                       "W_Plus_SB_P_T1_All",
+                       "W_Plus_B_3_T1_All",
+                       "W_Plus_FB_P_T2_All",
+                       "W_Plus_FB_P_T1_All",
+                       "W_Minus_SO_T2_All",
+                       "W_Minus_BB_B_T2_All",
+                       "W_Plus_SB_T2_All",
+                       "W_Minus_E_T1_All",
+                       "W_Plus_QS_P_T1_All",
+                       "W_Plus_SB_T2_All",
+                       "W_Minus_B_3_T1_All")]
+  
+  
+   #bst <- xgb.load(paste(directory, 'xgb.model_', Koef_filter, sep=""))
+  
+  
+  # library(CreditRisk)
+  # library(creditR)
+  # library(caTools)
+  # library(caret)
+  # library(woeBinning)
+  # 
+  # woerules <- woe.binning(df = train_sample,target.var = "Flag",pred.var = train_sample,event.class = 1)
+  # train_woe <- woe.binning.deploy(train_sample, woerules, add.woe.or.dum.var='woe')
+  # 
+  # #Creating a dataset with the transformed variables and default flag
+  # 
+  # train_woe <- train_woe[ , grepl( "woe" , names( train_woe ) ) ]
+  # train_woe$Flag<-train_sample$Flag
+  # 
+  # #Applying the WOE rules used on the train data to the test data
+  # 
+  # test_woe <- woe.binning.deploy(control_sample, woerules, add.woe.or.dum.var='woe')
+  # test_woe <- test_woe[ , grepl( "woe" , names( test_woe ) ) ]
+  # test_woe$Flag<-control_sample$Flag
+  # 
+  # # Information value and univariate gini can be used as variable selection methods. Generally, a threshold value of 0.30 is used for IV and 0.10 is used for univariate Gini
+  # 
+  # IV.calc.data(train_woe,"Flag")
+  # 
+  # Gini.univariate.data(train_woe,"Flag")
+  # 
+  # # Creating a new dataset by Gini elimination. IV elimination is also possible
+  # 
+  # eliminated_data <- IV_elimination(train_woe,"Flag",0.03)
+  # 
+  # # Correlation matrix constructure
+  # 
+  # corr_matrix = cor(eliminated_data[,-ncol(eliminated_data)])
+  # hc = findCorrelation(corr_matrix, cutoff=0.7) 
+  # hc = sort(hc)
+  # selected_data = eliminated_data[,-c(hc)]
+  # 
+  # # Creating a logistic (target: 0 or 1) regression model of the data
+  # 
+  # model= glm(formula = Flag ~ ., family = binomial(link = "logit"),  data = selected_data)
+  # summary(model)
+  # woe.glm.feature.importance(selected_data, model,"Flag")
+  # 
+  # # Exclude variables with low feauture importance: 
+  # # woe.X30_60DelinquencyLast3Mon.binned, woe.X60_90DelinquencyLast12Mon.binned, woe.X60_90DelinquencyLast3Mon.binned 
+  # # and recontstruct our model 
+  # 
+  # # selected_data<-selected_data[,!colnames(selected_data) %in% c("woe.X30_60DelinquencyLast3Mon.binned", 
+  # #                                                               "woe.X60_90DelinquencyLast12Mon.binned", 
+  # #                                                               "woe.X60_90DelinquencyLast3Mon.binned")]
+  # 
+  # model= glm(formula = Flag ~ ., family = binomial(link = "logit"),  data = selected_data)
+  # summary(model)
+  # woe.glm.feature.importance(selected_data,model,"Flag")
+  # 
+  # ms_train_data <- cbind(selected_data,model$fitted.values)
+  # ms_test_data <- cbind(test_woe[,colnames(selected_data)], predict(model,type = "response", newdata = test_woe))
+  # 
+  # plot.roc(ms_train_data$Flag, ms_train_data[,ncol(ms_train_data)],print.auc=T) 
+  # plot.roc(ms_test_data$Flag, ms_test_data[,ncol(ms_test_data)],print.auc=T) 
+  
+  
+  train_sample<-validation
+  control_sample<-control
+  
+  xgb <- xgboost(data = data.matrix(train_sample[,!names(train_sample) %in% "Flag"]), label = train_sample$Flag, eta = 0.01,
+                 max_depth =20, gamma = 10, subsample = 0.6, colsample_bytree =0.5, min_child_weight = 5,
+                 nthread = 2,  nrounds = 1000, eval_metric = "auc",objective='binary:logistic') 
+  
+  #xgb.save(bst, paste(directory, 'xgb.model_', string, sep=""))
+  
+  #a<-xgb.importance(model=xgb)
+  
+  sample=data.frame(control_Date,  
+                    control_Team_1, 
+                    control_Team_2, 
+                    control_Goal_1, 
+                    control_Goal_2, 
+                    control_Flag,
+                    # boost(validation,
+                    #       control,
+                    #       Koef_filter),
+                    predict(xgb, data.matrix(control_sample)),
+                    control_Koef,
+                    control_Win,
+                    control_Defeat,
+                    c(rep(control_Exodus, length(control_Koef))))
+  
+  names(sample)<-c("Date","Team_1", "Team_2", "Goal_1", "Goal_2", "Flag", "Pred", "Koef", "Koef_Win", "Koef_Defeat", "Exodus")
+  
+  plot.roc(sample$Flag, sample$Koef,print.auc=T)
+  plot.roc(sample$Flag, sample$Pred,print.auc=T)
+  
+  sample$Date<-as.Date(sample$Date,"%Y/%m/%d")
+  sample<-sample[with(sample,order(sample$Date)),]
+  plot.roc(sample$Flag, sample$Pred,print.auc=T) 
+  
+  sample_Win<-subset(sample, sample$Pred>=0.0)
+  profit(sample_Win)
+
+  if (j==1)
+    
+  {
+    sample_overall<-sample_Win
+  }
+  
+  else
+  
+    {
+    
+    sample_overall<-rbind(sample_overall, sample_Win)
+  
+    }
+  
   
 }
-
-sample_Basketball<-sample_Win_F_overall
-#profit(sample_Basketball)
-#profit(subset(sample_Basketball, sample_Basketball$Exodus=="Fora -5 Team_1"))
-
-sample_Basketball<-rbind(subset(sample_Basketball, is.na(sample_Basketball$Flag)==FALSE & as.Date(sample_Basketball$Date)<Sys.Date()),
-                       subset(sample_Basketball, as.Date(sample_Basketball$Date)==Sys.Date()+1))
-
-write.csv(merge(x = subset(sample_Basketball, is.na(sample_Basketball$Flag)==TRUE & as.Date(sample_Basketball$Date)==Sys.Date()+1)[,c("Date", "Team_1", "Team_2", "Exodus", "Koef")], 
-                y = time, by = c("Team_1", "Team_2"), all = FALSE),
-                paste(directory, "Basketball_Forecasts.csv", sep=""), row.names = FALSE)
+  sample_overall<-sample_overall[with(sample_overall,order(sample_overall$Date)),]
+  
+  profit(subset(sample_overall, sample_overall$Pred>=0.70))
+  
+  nrow(subset(sample_overall, sample_overall$Pred>=0.70))
+  
+  sample_overall_Win <- subset(sample_overall, sample_overall$Pred>=0.73)
+  
+  sample_overall_Defeat <- subset(sample_overall, sample_overall$Pred>=0.73)
+  
+  sample_overall_overall<-rbind(sample_overall_Win, sample_overall_Defeat)
+  sample_overall_overall<-sample_overall_overall[with(sample_overall_overall,order(sample_overall_overall$Date)),]
+  profit(sample_overall_overall)
+  
+  #write.table(subset(sample, is.na(sample$Flag)==TRUE), paste(directory, "For_Me_Basketball.csv", sep=""), sep=",", col.names = !file.exists(paste(directory, "For_Me_Basketball.csv", sep="")), append = T, row.names = FALSE)
+  
+  # sample_Win<-subset(sample, sample$Pred>=pred_index & sample$Koef>=koef_index_low & sample$Koef<=koef_index_high)
+  # #sample_Win<-subset(sample, sample$Pred>=0.65 & sample$Koef>=1.2 & sample$Koef<=2.0)
+  # sample_Win$Koef<-sample_Win$Koef*1.2
+  
+  # ifelse(Flag_filter=="Flag_Win_Fora_Minus_5",
+  #        sample$Koef<-ifelse(sample$Goal_1-sample$Goal_2==5,1,sample$Koef),
+  #        sample$Koef<-ifelse(sample$Goal_2-sample$Goal_2==1,1,sample$Koef))
+  #sample_Win$Flag<-ifelse(sample_Win$Goal_1-sample_Win$Goal_2>=5,1,0)
+  #sample_Win<-sample_Win[with(sample_Win, order(sample_Win$Date)),]
+  
+  # profit(sample_Win)
+  # 
+  sample_test=data.frame(sample$Date,  sample$Team_1, sample$Team_2, sample$Goal_1, sample$Goal_2, sample$Flag,
+                         sample$Pred, sample$Koef, sample$Exodus)
+  
+  names(sample_test)<-c("Date","Team_1", "Team_2", "Goal_1", "Goal_2", "Flag", "Pred", "Koef", "Exodus")
+  #sample_test$Flag<-ifelse(sample_test$Goal_1-sample_test$Goal_2>=5,1,0)
+  sample_test$Koef<-sample_test$Koef*1.2
+  
+  ifelse(Flag_filter=="Flag_Win_Fora_Minus_5",
+         sample_test$Koef<-ifelse(is.na(sample_test$Flag)==FALSE,
+                                  ifelse(sample_test$Goal_1-sample_test$Goal_2==5,1,sample_test$Koef),
+                                  sample_test$Koef),
+         sample_test$Koef<-ifelse(is.na(sample_test$Flag)==FALSE,
+                                  ifelse(sample_test$Goal_2-sample_test$Goal_1==5,1,sample_test$Koef),
+                                  sample_test$Koef))
+  
+  sample_test<-sample_test[with(sample_test, order(sample_test$Date)),]
+  sample_Win<-                     find_best_strategy(sample_test, 1.2, pred_index, koef_index_low, koef_index_high)
+  #profit(sample_Win)
+  
+  return (sample_Win)
+  
+}
