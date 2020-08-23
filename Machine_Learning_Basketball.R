@@ -64,7 +64,7 @@ profit<-function(data_sample)
   
 }
 
-pizdez<-function(sample, multiplier, ts)
+find_best_strategy<-function(sample, multiplier, ts)
   
 {  
   
@@ -1566,7 +1566,7 @@ check<-function (Season_list, Flag_filter, Koef_filter, pred_index, koef_index_l
                                     sample_test$Koef))
 
     sample_test<-sample_test[with(sample_test, order(sample_test$Date)),]
-    sample_Win<-                     pizdez(sample_test, 1.2, pred_index)
+    sample_Win<-                     find_best_strategy(sample_test, 1.2, pred_index)
     #profit(sample_Win)
     
 return (sample_Win)
